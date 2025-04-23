@@ -1,6 +1,7 @@
-import { CreateNoteSchema, createNoteSchema } from "@/lib/validation/note";
-import { set, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+"use client";
+
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
@@ -8,75 +9,128 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "./ui/form";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import LoadingButton from "./ui/loading-button";
 import { useRouter } from "next/navigation";
-import { Note } from "@prisma/client";
-import { useState } from "react";
+import { Label } from "./ui/label";
+
+// Interface based on the provided schema
+interface NoteModel {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
 
 interface AddEditNoteDialogProps {
   open: boolean;
-  setOpen: (open: boolean) => void;
-  noteToEdit?: Note;
+  setOpenAction: (open: boolean) => void;
+  noteToEdit?: NoteModel;
 }
 
 export default function AddEditNoteDialog({
   open,
-  setOpen,
+  setOpenAction,
   noteToEdit,
 }: AddEditNoteDialogProps) {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [errors, setErrors] = useState({ title: "", content: "" });
+  
   const router = useRouter();
 
-  const form = useForm<CreateNoteSchema>({
-    resolver: zodResolver(createNoteSchema),
-    defaultValues: {
-      title: noteToEdit?.title || "",
-      content: noteToEdit?.content || "",
-    },
-  });
+  // Update form when noteToEdit changes
+  useEffect(() => {
+    if (noteToEdit) {
+      setTitle(noteToEdit.title);
+      setContent(noteToEdit.content);
+    } else {
+      setTitle("");
+      setContent("");
+    }
+    // Clear any errors when dialog opens/closes
+    setErrors({ title: "", content: "" });
+  }, [noteToEdit, open]);
 
-  async function onSubmit(input: CreateNoteSchema) {
+  function validateForm() {
+    const newErrors = { title: "", content: "" };
+    let isValid = true;
+
+    if (!title.trim()) {
+      newErrors.title = "Title is required";
+      isValid = false;
+    }
+
+    if (!content.trim()) {
+      newErrors.content = "Content is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
-      if (noteToEdit) {
-        const response = await fetch("/api/notes", {
-          method: "PUT",
-          body: JSON.stringify({
-            id: noteToEdit.id,
-            ...input,
-          }),
-        });
-
-        if (!response.ok) {
-          throw Error("Status code: " + response.status);
-        }
-      } else {
-        const response = await fetch("/api/notes", {
-          method: "POST",
-          body: JSON.stringify(input),
-        });
-
-        if (!response.ok) {
-          throw Error("Status code: " + response.status);
-        }
-
-        form.reset();
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        throw Error("Not authenticated");
       }
+  
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+  
+      if (noteToEdit) {
+        // Update existing note using POST to update-note endpoint
+        await axios.post(
+          "https://ai-note-app-2.onrender.com/api/notes/update-note",
+          { 
+            id: noteToEdit.id,
+            title, 
+            content 
+          },
+          { headers }
+        );
+        router.refresh(); // This line is key
 
+
+      } else {
+        // Create new note
+        await axios.post(
+          "https://ai-note-app-2.onrender.com/api/notes/create-note",
+          { title, content },
+          { headers }
+        );
+        router.refresh(); // This line is key
+
+        // Reset form
+        setTitle("");
+        setContent("");
+      }
+  
       router.refresh();
-      setOpen(false);
+      setOpenAction(false);
     } catch (error) {
       console.error(error);
       alert("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -84,19 +138,28 @@ export default function AddEditNoteDialog({
     if (!noteToEdit) {
       return;
     }
+    
     setDeleteInProgress(true);
+    
     try {
-      const response = await fetch("/api/notes", {
-        method: "DELETE",
-        body: JSON.stringify({
-          id: noteToEdit.id,
-        }),
-      });
-      if (!response.ok) {
-        throw Error("Status code: " + response.status);
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        throw Error("Not authenticated");
       }
+  
+      // Using POST with the id in the request body for consistency with your API
+      await axios.delete("https://ai-note-app-2.onrender.com/api/notes/delete-note", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        data: { id: noteToEdit.id } // Send ID in the request body for DELETE
+      });
+      
+      
       router.refresh();
-      setOpen(false);
+      setOpenAction(false);
     } catch (error) {
       console.error(error);
       alert("Something went wrong. Please try again.");
@@ -106,61 +169,60 @@ export default function AddEditNoteDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpenAction}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{noteToEdit ? "Edit Note" : "Add Note"}</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Note Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Note title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Note Title</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note title"
             />
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Note Content</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Note content" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="content">Note Content</Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Note content"
+              rows={5}
             />
-            <DialogFooter className="gap-1 sm:gap-0">
-              {noteToEdit && (
-                <LoadingButton
-                  type="button"
-                  variant="destructive"
-                  onClick={deleteNote}
-                  loading={deleteInProgress}
-                  disabled={form.formState.isSubmitting}
-                >
-                  Delete
-                </LoadingButton>
-              )}
+            {errors.content && (
+              <p className="text-sm text-red-500">{errors.content}</p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-1 sm:gap-0">
+            {noteToEdit && (
               <LoadingButton
-                type="submit"
-                loading={form.formState.isSubmitting}
-                disabled={deleteInProgress}
+                type="button"
+                variant="destructive"
+                onClick={deleteNote}
+                loading={deleteInProgress}
+                disabled={isSubmitting}
               >
-                Submit
+                Delete
               </LoadingButton>
-            </DialogFooter>
-          </form>
-        </Form>
+            )}
+            <LoadingButton
+              type="submit"
+              loading={isSubmitting}
+              disabled={deleteInProgress}
+            >
+              Submit
+            </LoadingButton>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
