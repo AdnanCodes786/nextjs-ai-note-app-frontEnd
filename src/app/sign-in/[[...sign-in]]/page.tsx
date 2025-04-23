@@ -133,7 +133,7 @@ export default function SignInPage() {
 
           <div className="flex items-center justify-center">
             <div className="text-sm">
-              <span className="text-gray-500">Don't have an account?</span>{" "}
+              <span className="text-gray-500">Dont have an account?</span>{" "}
               <Link href="/sign-up" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Sign up
               </Link>

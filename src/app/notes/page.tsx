@@ -75,7 +75,7 @@ export default function NotesPage() {
       ))}
       {notes.length === 0 && (
         <div className="col-span-full text-center p-10 text-gray-500">
-          You don't have any notes yet.
+          You dont have any notes yet.
         </div>
       )}
     </div>
