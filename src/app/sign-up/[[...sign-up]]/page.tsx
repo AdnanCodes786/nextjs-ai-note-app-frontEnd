@@ -38,7 +38,7 @@ export default function SignUpPage() {
       //   },
       //   body: JSON.stringify(formData),
       // });
-      const response = await axios.post("https://ai-note-app-2.onrender.com/api/auth/signup",formData);
+      const response = await axios.post("https://ai-note-app-3.onrender.com/api/auth/signup",formData);
 
 
       // const data = await response.json();

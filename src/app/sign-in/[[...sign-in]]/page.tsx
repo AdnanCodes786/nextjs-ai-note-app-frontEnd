@@ -38,7 +38,7 @@ export default function SignInPage() {
       // });
 
 
-      const response = await axios.post("https://ai-note-app-2.onrender.com/api/auth/login",formData)
+      const response = await axios.post("https://ai-note-app-3.onrender.com/api/auth/login",formData)
 
       // const data = await response.json();
 

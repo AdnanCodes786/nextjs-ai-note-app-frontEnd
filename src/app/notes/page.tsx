@@ -27,7 +27,7 @@ export default function NotesPage() {
           return;
         }
 
-        const response = await fetch("https://ai-note-app-2.onrender.com/api/notes/get-all-notes", {
+        const response = await fetch("https://ai-note-app-3.onrender.com/api/notes/get-all-notes", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

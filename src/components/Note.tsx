@@ -64,7 +64,7 @@ export default function Note({ note }: NoteProps) {
       
       
       const checkResponse = await axios.post(
-        `https://ai-note-app-2.onrender.com/api/ai/get-summary`,
+        `https://ai-note-app-3.onrender.com/api/ai/get-summary`,
         { noteId: note.id },
         {
           headers: {
@@ -83,7 +83,7 @@ export default function Note({ note }: NoteProps) {
       
       // Generate a new summary
       const response = await axios.post(
-        "https://ai-note-app-2.onrender.com/api/ai/create-summary",
+        "https://ai-note-app-3.onrender.com/api/ai/create-summary",
         { noteId: note.id },
         {
           headers: {

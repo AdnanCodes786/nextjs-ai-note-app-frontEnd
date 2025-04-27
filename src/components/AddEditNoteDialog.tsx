@@ -99,7 +99,7 @@ export default function AddEditNoteDialog({
       if (noteToEdit) {
         // Update existing note using POST to update-note endpoint
         await axios.post(
-          "https://ai-note-app-2.onrender.com/api/notes/update-note",
+          "https://ai-note-app-3.onrender.com/api/notes/update-note",
           { 
             id: noteToEdit.id,
             title, 
@@ -113,7 +113,7 @@ export default function AddEditNoteDialog({
       } else {
         // Create new note
         await axios.post(
-          "https://ai-note-app-2.onrender.com/api/notes/create-note",
+          "https://ai-note-app-3.onrender.com/api/notes/create-note",
           { title, content },
           { headers }
         );
@@ -149,7 +149,7 @@ export default function AddEditNoteDialog({
       }
   
       // Using POST with the id in the request body for consistency with your API
-      await axios.delete("https://ai-note-app-2.onrender.com/api/notes/delete-note", {
+      await axios.delete("https://ai-note-app-3.onrender.com/api/notes/delete-note", {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
